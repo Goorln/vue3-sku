@@ -11,6 +11,19 @@ const getGoods = async () => {
 }
 onMounted(() => getGoods())
 
+// 切换选中状态
+const changeSelectedStatus = (item, val) => {
+  // item:同一排对象 val: 当前点击项
+  // 如果当前已经激活，就取消激活
+  if (val.selected) {
+    val.selected = false
+  } else {
+    // 如果当前未激活，就把同排其他取消激活，再把自己激活
+    item.values.forEach(val => val.selected = false)
+    val.selected = true
+  }
+}
+
 </script>
 
 <template>
@@ -20,9 +33,9 @@ onMounted(() => getGoods())
       <dd>
         <template v-for="val in item.values" :key="val.name">
           <!-- 图片类型规格 -->
-          <img v-if="val.picture" :src="val.picture" :title="val.name">
+          <img v-if="val.picture" :class="{selected:val.selected}" @click="$event=>changeSelectedStatus(item,val)" :src="val.picture" :title="val.name">
           <!-- 文字类型规格 -->
-          <span v-else>{{ val.name }}</span>
+          <span v-else :class="{selected:val.selected}" @click="$event=>changeSelectedStatus(item,val)">{{ val.name }}</span>
         </template>
       </dd>
     </dl>
