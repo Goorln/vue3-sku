@@ -4,18 +4,21 @@ import axios from 'axios'
 import powerSet from './power-set'
 // 商品数据
 const goods = ref({})
+let pathMap = {}
 const getGoods = async () => {
   // 1135076  初始化就有无库存的规格
   // 1369155859933827074 更新之后有无库存项（蓝色-20cm-中国）
   const res = await axios.get('http://pcapi-xiaotuxian-front-devtest.itheima.net/goods?id=1369155859933827074')
   goods.value = res.data.result
-  const pathMap1 = getPathMap(goods.value)
-  console.log(pathMap1);
+  pathMap = getPathMap(goods.value)
+  console.log(pathMap);
+  initDisabledStatus(goods.value.specs, pathMap)
 }
 onMounted(() => getGoods())
 
 // 切换选中状态
 const changeSelectedStatus = (item, val) => {
+  if (val.disabled) return
   // item:同一排对象 val: 当前点击项
   // 如果当前已经激活，就取消激活
   if (val.selected) {
@@ -25,6 +28,7 @@ const changeSelectedStatus = (item, val) => {
     item.values.forEach(val => val.selected = false)
     val.selected = true
   }
+  updateDisabledStatus(goods.value.specs, pathMap)
 }
 // 生成有效路径字典对象
 const getPathMap = (goods) => {
@@ -53,6 +57,51 @@ const getPathMap = (goods) => {
   })
   return pathMap
 }
+// 初始化禁用状态
+// 思路：遍历每一个规格的对象，使用name字段作为key去路径地点pathMap中做匹配，匹配不上则为false
+const initDisabledStatus = (specs, pathMap) => {
+  specs.forEach(spec => {
+    spec.values.forEach(val => {
+      if (pathMap[val.name]) {
+        val.disabled = false
+      } else {
+        val.disabled = true
+      }
+    })
+  })
+}
+//获取选中项的匹配数组
+const getSelectedValues = (specs) => {
+  const arr = []
+  specs.forEach(spec => {
+    // 目标： 找到values中selected为true的项，然后把他的name字段添加数组对应的位置
+    const selectedVal = spec.values.find(item => item.selected === true)
+    arr.push(selectedVal ? selectedVal.name : undefined)
+  })
+
+
+  return arr
+}
+// 切换时更新禁用状态
+// 思路： 按照顺序得到规格选中项的数组['蓝色','20cm',undefined]
+const updateDisabledStatus = (specs, pathMap) => {
+  // 遍历每一个规格
+  specs.forEach((spec, index) => {
+    const selectedValues = getSelectedValues(specs)
+    spec.values.forEach(val => {
+      // 把name字段的值填充到对应的位置
+      selectedValues[index] = val.name
+      // 过滤掉undefined项使用join方法形成一个有效的key
+      const key = selectedValues.filter(value => value).join('-')
+      // 使用key去pathMap中进行匹配，匹配不上，则当前项禁用
+      if (pathMap[key]) {
+        val.disabled = false
+      } else {
+        val.disabled = true
+      }
+    })
+  })
+}
 
 </script>
 
@@ -63,9 +112,9 @@ const getPathMap = (goods) => {
       <dd>
         <template v-for="val in item.values" :key="val.name">
           <!-- 图片类型规格 -->
-          <img v-if="val.picture" :class="{selected:val.selected}" @click="$event=>changeSelectedStatus(item,val)" :src="val.picture" :title="val.name">
+          <img v-if="val.picture" :class="{selected:val.selected,disabled:val.disabled}" @click="$event=>changeSelectedStatus(item,val)" :src="val.picture" :title="val.name">
           <!-- 文字类型规格 -->
-          <span v-else :class="{selected:val.selected}" @click="$event=>changeSelectedStatus(item,val)">{{ val.name }}</span>
+          <span v-else :class="{selected:val.selected,disabled:val.disabled}" @click="$event=>changeSelectedStatus(item,val)">{{ val.name }}</span>
         </template>
       </dd>
     </dl>
