@@ -28,7 +28,22 @@ const changeSelectedStatus = (item, val) => {
     item.values.forEach(val => val.selected = false)
     val.selected = true
   }
+  // 点击按钮时更新
   updateDisabledStatus(goods.value.specs, pathMap)
+  // 产出SKU对象数据
+  // 有效sku？已经选择的数组中找不到undefined,那么用户已经选择了所有有效的sku
+  const index = getSelectedValues(goods.value.specs).findIndex(item => item === undefined)
+  if (index > -1) {
+    console.log('找到了，信息不完整');
+  } else {
+    // console.log('没找到，信息完整，可以产出');
+    // 获取sku对象
+    const key = getSelectedValues(goods.value.specs).join('-')
+    const skuIds = pathMap[key]
+    // console.log(pathMap, key, skuIds);
+    const skuObj = goods.value.skus.find(item => item.id === skuIds[0])
+    console.log('sku对象为', skuObj);
+  }
 }
 // 生成有效路径字典对象
 const getPathMap = (goods) => {
@@ -57,6 +72,7 @@ const getPathMap = (goods) => {
   })
   return pathMap
 }
+
 // 初始化禁用状态
 // 思路：遍历每一个规格的对象，使用name字段作为key去路径地点pathMap中做匹配，匹配不上则为false
 const initDisabledStatus = (specs, pathMap) => {
@@ -70,6 +86,7 @@ const initDisabledStatus = (specs, pathMap) => {
     })
   })
 }
+
 //获取选中项的匹配数组
 const getSelectedValues = (specs) => {
   const arr = []
@@ -82,6 +99,7 @@ const getSelectedValues = (specs) => {
 
   return arr
 }
+
 // 切换时更新禁用状态
 // 思路： 按照顺序得到规格选中项的数组['蓝色','20cm',undefined]
 const updateDisabledStatus = (specs, pathMap) => {
